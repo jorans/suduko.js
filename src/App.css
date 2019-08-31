@@ -25,6 +25,9 @@ table.gameBoard td.verticalBorder{
 table.gameBoard td.horizontalBorder{
   border-bottom: 4px solid black;
 }
+table.gameBoard td.failed input{
+  background-color: mistyrose;
+}
 
 input{
   padding-left: 10px;
