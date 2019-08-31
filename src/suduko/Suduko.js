@@ -12,16 +12,17 @@ function classNames(props) {
 }
 
 function Suduko() {
-    const [state, setState] = useState(getInitialState());
+    const [gameBoard, setGameBoard] = useState(getInitialGameBoard);
+
     const handleInput = (square) => (evt) => {
-        console.log("handleInput", state.gameBoard)
+        console.log("handleInput", gameBoard)
         let number = validateInput(evt);
         if(number){
-            let nextGameBoard = placeNumberOnGameBoard(number, state.gameBoard, square);
-            setState({...state, gameBoard:nextGameBoard})
+            let nextGameBoard = placeNumberOnGameBoard(number, gameBoard, square);
+            setGameBoard(nextGameBoard);
         }
     }
-    let boardUI = state.gameBoard.map(row => {
+    let boardUI = gameBoard.map(row => {
         let cols = row.values.map(square => {
             let tdClassnames = classNames({
                 "verticalBorder": square.x === 2 || square.x === 5,
@@ -81,12 +82,5 @@ function getInitialGameBoard() {
     }
     return result;
 }
-
-function getInitialState() {
-    return ({
-        gameBoard: getInitialGameBoard()
-    });
-}
-
 
 export default Suduko;
