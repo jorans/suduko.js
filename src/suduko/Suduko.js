@@ -11,16 +11,28 @@ function classNames(props) {
     return result;
 }
 
+function deepCopy(gameBoard) {
+    return JSON.parse(JSON.stringify(gameBoard));
+}
+
+function lockGameboard(gameboard) {
+    return mapEachSquare(gameboard, (square) => {
+        square.locked = square.value > 0;
+        return square;
+    });
+}
+
 function Suduko() {
     const size = 3;
     const neigborsMap = useMemo(() => getNeighborsMap(getIndicies(size)), [size]);
     const [gameBoard, setGameBoard] = useState(() => getInitialGameBoard(size));
+    const [savedGameboards, setSavedGameboards] = useState([]);
 
     const handleInput = (square) => (evt) => {
         let input = validateInput(evt);
         if (input) {
             let number = input !== "*" ? input : 0;
-            let nextGameBoard = [...gameBoard];
+            let nextGameBoard = deepCopy(gameBoard);
             if (number === 0) {
                 // This square has been reset, clear any failure flags
                 nextGameBoard = clearFailingSquareOnGameBoard(nextGameBoard, square)
@@ -43,16 +55,30 @@ function Suduko() {
             setGameBoard(placeNumberOnGameBoard(number, nextGameBoard, square));
         }
     }
+    const saveGameboard = () => {
+        let nextSavedGameboards = deepCopy(savedGameboards);
+        nextSavedGameboards.push(deepCopy(gameBoard));
+        setSavedGameboards(nextSavedGameboards);
+        let nextGameboard = deepCopy(gameBoard);
+        setGameBoard(lockGameboard(nextGameboard));
+
+    };
+    const restoreGameboard = () => {
+        let nextSavedGameboards = deepCopy(savedGameboards);
+        setGameBoard(nextSavedGameboards.pop());
+        setSavedGameboards(nextSavedGameboards);
+    };
     let boardUI = gameBoard.map(row => {
         let cols = row.values.map(square => {
             let tdClassnames = classNames({
                 "verticalBorder": square.x === 2 || square.x === 5,
                 "horizontalBorder" : square.y === 2 || square.y === 5,
-                "failed" : square.failing
+                "failed" : square.failing,
+                "locked" : square.locked
             });
             return (
                 <td key={square.id} className={tdClassnames}>
-                    <input key={square.id} type={"text"} onPaste={handleInput(square)} onKeyDown={handleInput(square)} defaultValue={square.value === 0 ? '' : square.value} size={1} maxLength={1}/>
+                    <input disabled={square.locked} key={square.id} type={"text"} onPaste={handleInput(square)} onKeyDown={handleInput(square)} defaultValue={square.value === 0 ? '' : square.value} size={1} maxLength={1}/>
                 </td>
             )
         });
@@ -68,6 +94,8 @@ function Suduko() {
             <table className={"App gameBoard"}>
                 <tbody>{boardUI}</tbody>
             </table>
+            <button onClick={saveGameboard}>Save</button>
+            <button onClick={restoreGameboard} disabled={isEmptyArray(savedGameboards)}>Restore ({savedGameboards.length})</button>
         </>
     );
 }
@@ -134,6 +162,15 @@ function getUniqueSquares(a) {
     return b;
 }
 
+function mapEachSquare(gameboard, fn){
+    let gb = deepCopy(gameboard);
+    for (let i = 0; i < gb.length; i++) {
+        for (let j = 0; j < gb[i].values.length; j++) {
+            gb[i].values[j] = fn(gb[i].values[j]);
+        }
+    }
+    return gb;
+}
 function failingSquareOnGameBoard(gameBoard, square) {
     gameBoard[square.y].values[square.x].failing = true;
     return gameBoard;
@@ -247,7 +284,7 @@ const removeSquare = (uniqueSquares, square) => {
     return result;
 }
 
-const buildSquare = (y, x, value) => { return {id: y + ":" + x, y: y, x: x, value: value, failing: false};}
+const buildSquare = (y, x, value) => { return {id: y + ":" + x, y: y, x: x, value: value, failing: false, locked:false};}
 const isSameSquare = (s1, s2) => {return s1.x === s2.x && s1.y === s2.y;}
 const getKey = (square) => {return square.x + ":" + square.y;}
 const isEmptyArray = (array) => {return !array || !array.length;}
