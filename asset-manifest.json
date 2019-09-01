@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/suduko.js/static/css/main.44c8bd70.chunk.css",
-    "main.js": "/suduko.js/static/js/main.004c6d0b.chunk.js",
-    "main.js.map": "/suduko.js/static/js/main.004c6d0b.chunk.js.map",
+    "main.css": "/suduko.js/static/css/main.5b1826ef.chunk.css",
+    "main.js": "/suduko.js/static/js/main.926d5fd5.chunk.js",
+    "main.js.map": "/suduko.js/static/js/main.926d5fd5.chunk.js.map",
     "runtime~main.js": "/suduko.js/static/js/runtime~main.59041670.js",
     "runtime~main.js.map": "/suduko.js/static/js/runtime~main.59041670.js.map",
-    "static/js/2.0c697d88.chunk.js": "/suduko.js/static/js/2.0c697d88.chunk.js",
-    "static/js/2.0c697d88.chunk.js.map": "/suduko.js/static/js/2.0c697d88.chunk.js.map",
+    "static/js/2.f262a4ca.chunk.js": "/suduko.js/static/js/2.f262a4ca.chunk.js",
+    "static/js/2.f262a4ca.chunk.js.map": "/suduko.js/static/js/2.f262a4ca.chunk.js.map",
     "index.html": "/suduko.js/index.html",
-    "precache-manifest.d2d9698579d86373c6e24e3864168963.js": "/suduko.js/precache-manifest.d2d9698579d86373c6e24e3864168963.js",
+    "precache-manifest.ccffae417e730b56289914344370f5cc.js": "/suduko.js/precache-manifest.ccffae417e730b56289914344370f5cc.js",
     "service-worker.js": "/suduko.js/service-worker.js",
-    "static/css/main.44c8bd70.chunk.css.map": "/suduko.js/static/css/main.44c8bd70.chunk.css.map"
+    "static/css/main.5b1826ef.chunk.css.map": "/suduko.js/static/css/main.5b1826ef.chunk.css.map"
   }
 }
