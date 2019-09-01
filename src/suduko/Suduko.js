@@ -18,10 +18,24 @@ function Suduko() {
 
     const handleInput = (square) => (evt) => {
         let input = validateInput(evt);
-        if(input){
+        if (input) {
             let number = input !== "*" ? input : 0;
             let nextGameBoard = [...gameBoard];
-            if (number === 0 || validMove(nextGameBoard, square, number, neigborsMap)) {
+            if (number === 0) {
+                // This square has been reset, clear any failure flags
+                nextGameBoard = clearFailingSquareOnGameBoard(nextGameBoard, square)
+                // Re-evaluate neighbors that have same number (in case a faulty state has been resolved)
+                let prevNumber = getNumberOnGameboard(gameBoard, square);
+                let gb = placeNumberOnGameBoard(number, nextGameBoard, square);
+                let neighborsWithNumber = getAllNeighborsWithNumber(neigborsMap, square, prevNumber, gb)
+                neighborsWithNumber.forEach((neighbor) => {
+                    if (validMove(gb, neighbor, prevNumber, neigborsMap)) {
+                        nextGameBoard = clearFailingSquareOnGameBoard(nextGameBoard, neighbor)
+                    } else {
+                        nextGameBoard = failingSquareOnGameBoard(nextGameBoard, neighbor)
+                    }
+                })
+            } else if (validMove(gameBoard, square, number, neigborsMap)) {
                 nextGameBoard = clearFailingSquareOnGameBoard(nextGameBoard, square)
             } else {
                 nextGameBoard = failingSquareOnGameBoard(nextGameBoard, square)
@@ -77,21 +91,49 @@ const validateInput = (evt) => {
     }
 }
 
-function getKey(square) {
-    return square.x + ":" + square.y;
+
+
+function getAllNeighborsWithNumber(neigborsMap, square, number, gameBoard) {
+    let hasSameNumber = [];
+    neigborsMap[getKey(square)].forEach((neighbors) => {
+        let neighborWithSameNumber = getNeighborsWithSameNumber(number, gameBoard, neighbors);
+        hasSameNumber = [...hasSameNumber, ...neighborWithSameNumber];
+    });
+    return removeSquare(getUniqueSquares(hasSameNumber), square);
 }
 
 const validMove = (gameBoard, square, number, neigborsMap) => {
-    return neigborsMap[getKey(square)].every((neigbors) => {
-        return !someNeighborHaveNumber(number, gameBoard, neigbors);
-    })
+    return isEmptyArray(getAllNeighborsWithNumber(neigborsMap, square, number, gameBoard));
+}
+const getNeighborsWithSameNumber = (number, gameboard, neighbors) => {
+    let hasSameNumber = [];
+    neighbors.forEach((neighbor) => {
+        if (number === getNumberOnGameboard(gameboard, neighbor)) {
+            hasSameNumber.push(neighbor);
+        }
+    });
+    return hasSameNumber;
+}
+function getUniqueSquares(a) {
+    if(a.length === 0){
+        return [];
+    }
+    var b = [a[0]], i, j, tmp;
+    for (i = 1; i < a.length; i++) {
+        tmp = 1;
+        for (j = 0; j < b.length; j++) {
+            if (a[i].x === b[j].x && a[i].y === b[j].y) {
+                tmp = 0;
+                break;
+            }
+        }
+        if (tmp) {
+            b.push(a[i]);
+        }
+    }
+    return b;
 }
 
-const someNeighborHaveNumber = (number, gameBoard, neighbors) => {
-    return neighbors.some((neighbor) => number === getNumberOnGameBoard(gameBoard, neighbor))
-
-
-}
 function failingSquareOnGameBoard(gameBoard, square) {
     gameBoard[square.y].values[square.x].failing = true;
     return gameBoard;
@@ -104,12 +146,8 @@ function placeNumberOnGameBoard(number, gameBoard, square) {
     gameBoard[square.y].values[square.x].value = number;
     return gameBoard;
 }
-function getNumberOnGameBoard(gameBoard, square) {
+function getNumberOnGameboard(gameBoard, square) {
     return gameBoard[square.y].values[square.x].value;
-}
-
-function buildSquare(y, x, value) {
-    return {id: y + ":" + x, y: y, x: x, value: value, failing: false};
 }
 
 function getInitialGameBoard(size) {
@@ -197,5 +235,21 @@ function getNeighborsMap(indicies){
     }
     return neighborsMap;
 }
+
+const removeSquare = (uniqueSquares, square) => {
+    let result = [];
+    for (let i = 0; i < uniqueSquares.length; i++) {
+        let uniqueSquare = uniqueSquares[i];
+        if (!isSameSquare(square, uniqueSquare)) {
+            result.push(uniqueSquare);
+        }
+    }
+    return result;
+}
+
+const buildSquare = (y, x, value) => { return {id: y + ":" + x, y: y, x: x, value: value, failing: false};}
+const isSameSquare = (s1, s2) => {return s1.x === s2.x && s1.y === s2.y;}
+const getKey = (square) => {return square.x + ":" + square.y;}
+const isEmptyArray = (array) => {return !array || !array.length;}
 
 export default Suduko;
