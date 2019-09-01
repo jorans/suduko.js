@@ -25,7 +25,7 @@ function lockGameboard(gameboard) {
 function Suduko() {
     const size = 3;
     const neigborsMap = useMemo(() => getNeighborsMap(getIndicies(size)), [size]);
-    const [gameBoard, setGameBoard] = useState(() => getInitialGameBoard(size));
+    const [gameBoard, setGameBoard] = useState(() => getInitialGameBoard(size, neigborsMap));
     const [savedGameboards, setSavedGameboards] = useState([]);
 
     const handleInput = (square) => (evt) => {
@@ -73,8 +73,7 @@ function Suduko() {
             let tdClassnames = classNames({
                 "verticalBorder": square.x === 2 || square.x === 5,
                 "horizontalBorder" : square.y === 2 || square.y === 5,
-                "failed" : square.failing,
-                "locked" : square.locked
+                "failed" : square.failing
             });
             return (
                 <td key={square.id} className={tdClassnames}>
@@ -119,57 +118,14 @@ const validateInput = (evt) => {
     }
 }
 
-
-
-function getAllNeighborsWithNumber(neigborsMap, square, number, gameBoard) {
-    let hasSameNumber = [];
-    neigborsMap[getKey(square)].forEach((neighbors) => {
-        let neighborWithSameNumber = getNeighborsWithSameNumber(number, gameBoard, neighbors);
-        hasSameNumber = [...hasSameNumber, ...neighborWithSameNumber];
+function getAllNeighborsWithNumber(neigborsMap, square, number, gameboard) {
+    return neigborsMap[getKeyFromPos(square)].filter((neighbor) => {
+        return !isSamePos(square, neighbor) && number === getNumberOnGameboard(gameboard, neighbor);
     });
-    return removeSquare(getUniqueSquares(hasSameNumber), square);
 }
 
 const validMove = (gameBoard, square, number, neigborsMap) => {
     return isEmptyArray(getAllNeighborsWithNumber(neigborsMap, square, number, gameBoard));
-}
-const getNeighborsWithSameNumber = (number, gameboard, neighbors) => {
-    let hasSameNumber = [];
-    neighbors.forEach((neighbor) => {
-        if (number === getNumberOnGameboard(gameboard, neighbor)) {
-            hasSameNumber.push(neighbor);
-        }
-    });
-    return hasSameNumber;
-}
-function getUniqueSquares(a) {
-    if(a.length === 0){
-        return [];
-    }
-    var b = [a[0]], i, j, tmp;
-    for (i = 1; i < a.length; i++) {
-        tmp = 1;
-        for (j = 0; j < b.length; j++) {
-            if (a[i].x === b[j].x && a[i].y === b[j].y) {
-                tmp = 0;
-                break;
-            }
-        }
-        if (tmp) {
-            b.push(a[i]);
-        }
-    }
-    return b;
-}
-
-function mapEachSquare(gameboard, fn){
-    let gb = deepCopy(gameboard);
-    for (let i = 0; i < gb.length; i++) {
-        for (let j = 0; j < gb[i].values.length; j++) {
-            gb[i].values[j] = fn(gb[i].values[j]);
-        }
-    }
-    return gb;
 }
 function failingSquareOnGameBoard(gameBoard, square) {
     gameBoard[square.y].values[square.x].failing = true;
@@ -181,13 +137,14 @@ function clearFailingSquareOnGameBoard(gameBoard, square) {
 }
 function placeNumberOnGameBoard(number, gameBoard, square) {
     gameBoard[square.y].values[square.x].value = number;
+    gameBoard[square.y].values[square.x].possible[number] = false;
     return gameBoard;
 }
 function getNumberOnGameboard(gameBoard, square) {
     return gameBoard[square.y].values[square.x].value;
 }
 
-function getInitialGameBoard(size) {
+function getInitialGameBoard(size, neighborsMap) {
     let height = size*size;
     let width = size*size;
     var result = [];
@@ -208,7 +165,7 @@ function getIndicies(size){
     for(let row = 0; row < numberOfRows; row++){
         let rowIndicies = [];
         for(let col = 0; col < numberOfCols; col++){
-            rowIndicies.push({"x": col, "y":row})
+            rowIndicies.push(buildPos(row, col));
         }
         allInidicies.push(rowIndicies);
     }
@@ -216,7 +173,7 @@ function getIndicies(size){
     for(let col = 0; col < numberOfCols ; col++){
         let rowIndicies = [];
         for(let row = 0; row < numberOfRows; row++){
-            rowIndicies.push({"x": col, "y":row})
+            rowIndicies.push(buildPos(row, col));
         }
         allInidicies.push(rowIndicies);
     }
@@ -248,7 +205,7 @@ function getIndicies(size){
                 for (let col = 0; col < colsInQuadrant; col++) {
                     let x = (quadrantCol*quadrantSize) + col;
                     let y = (quadrantRow*quadrantSize) + row;
-                    quadrantIndicies.push({"x":x, "y":y});
+                    quadrantIndicies.push(buildPos(y, x));
                 }
             }
             allInidicies.push(quadrantIndicies);
@@ -262,31 +219,50 @@ function getNeighborsMap(indicies){
     let neighborsMap = {};
     for(let i = 0; i < indicies.length; i++){
         for(let j = 0; j < indicies[i].length; j++){
-            let neighbor = indicies[i][j];
-            let key = neighbor.x + ":" + neighbor.y;
+            let key = getKeyFromPos(indicies[i][j]);
             if (neighborsMap[key] === undefined) {
                 neighborsMap[key] = []
             }
-            neighborsMap[key].push(indicies[i])
+            neighborsMap[key] = getUniquePoss([...neighborsMap[key], ...indicies[i]]);
         }
     }
     return neighborsMap;
 }
 
-const removeSquare = (uniqueSquares, square) => {
-    let result = [];
-    for (let i = 0; i < uniqueSquares.length; i++) {
-        let uniqueSquare = uniqueSquares[i];
-        if (!isSameSquare(square, uniqueSquare)) {
-            result.push(uniqueSquare);
+function mapEachSquare(gameboard, fn){
+    let gb = deepCopy(gameboard);
+    for (let i = 0; i < gb.length; i++) {
+        for (let j = 0; j < gb[i].values.length; j++) {
+            gb[i].values[j] = fn(gb[i].values[j]);
         }
     }
-    return result;
+    return gb;
 }
 
-const buildSquare = (y, x, value) => { return {id: y + ":" + x, y: y, x: x, value: value, failing: false, locked:false};}
-const isSameSquare = (s1, s2) => {return s1.x === s2.x && s1.y === s2.y;}
-const getKey = (square) => {return square.x + ":" + square.y;}
+function getUniquePoss(a) {
+    if(a.length === 0){
+        return [];
+    }
+    var b = [a[0]], i, j, tmp;
+    for (i = 1; i < a.length; i++) {
+        tmp = 1;
+        for (j = 0; j < b.length; j++) {
+            if (isSamePos(a[i], b[j])) {
+                tmp = 0;
+                break;
+            }
+        }
+        if (tmp) {
+            b.push(a[i]);
+        }
+    }
+    return b;
+}
+
+const buildSquare = (y, x, value) => { return {id: y + ":" + x, y: y, x: x, value: value, failing: false, locked:false, possible:{"1":true,"2":true,"3":true,"4":true,"5":true,"6":true,"7":true,"8":true,"9":true}};}
+const buildPos = (y,x) => {return {y:y, x:x}};
+const isSamePos = (s1, s2) => {return s1.x === s2.x && s1.y === s2.y;}
+const getKeyFromPos = (pos) => {return pos.x + ":" + pos.y;}
 const isEmptyArray = (array) => {return !array || !array.length;}
 
 export default Suduko;

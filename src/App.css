@@ -28,6 +28,10 @@ table.gameBoard td.horizontalBorder{
 table.gameBoard td.failed input{
   background-color: mistyrose;
 }
+table.gameBoard td input:disabled{
+  background-color: lavender;
+  color: black;
+}
 
 input{
   padding-left: 10px;
