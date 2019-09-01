@@ -65,7 +65,7 @@ const validateInput = (evt) => {
     var regex = /[1-9]/;
     if (!regex.test(key)) {
         theEvent.returnValue = false;
-        if (/[:print:]/.test(key) && theEvent.preventDefault) {
+        if (/[ -~]/.test(key) && theEvent.preventDefault) {
             theEvent.preventDefault();
         }
         if (keyCode === 8 || keyCode === 32) {
