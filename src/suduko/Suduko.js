@@ -53,6 +53,7 @@ function Suduko() {
                 nextGameBoard = failingSquareOnGameBoard(nextGameBoard, square)
             }
             setGameBoard(placeNumberOnGameBoard(number, nextGameBoard, square));
+            //    gameBoard[square.y].values[square.x].possible[number] = false;
         }
     }
     const saveGameboard = () => {
@@ -127,21 +128,17 @@ function getAllNeighborsWithNumber(neigborsMap, square, number, gameboard) {
 const validMove = (gameBoard, square, number, neigborsMap) => {
     return isEmptyArray(getAllNeighborsWithNumber(neigborsMap, square, number, gameBoard));
 }
-function failingSquareOnGameBoard(gameBoard, square) {
-    gameBoard[square.y].values[square.x].failing = true;
-    return gameBoard;
+function failingSquareOnGameBoard(gameBoard, pos) {
+    return mapGameboardSquare(gameBoard, pos, (square) => {square.failing = true;})
 }
-function clearFailingSquareOnGameBoard(gameBoard, square) {
-    gameBoard[square.y].values[square.x].failing = false;
-    return gameBoard;
+function clearFailingSquareOnGameBoard(gameBoard, pos) {
+    return mapGameboardSquare(gameBoard, pos, (square) => {square.failing = false;})
 }
-function placeNumberOnGameBoard(number, gameBoard, square) {
-    gameBoard[square.y].values[square.x].value = number;
-    gameBoard[square.y].values[square.x].possible[number] = false;
-    return gameBoard;
+function placeNumberOnGameBoard(number, gameBoard, pos) {
+    return mapGameboardSquare(gameBoard, pos, (square) => {square.value = number;})
 }
-function getNumberOnGameboard(gameBoard, square) {
-    return gameBoard[square.y].values[square.x].value;
+function getNumberOnGameboard(gameBoard, pos) {
+    return gameBoard[pos.y].values[pos.x].value;
 }
 
 function getInitialGameBoard(size, neighborsMap) {
@@ -235,6 +232,15 @@ function mapEachSquare(gameboard, fn){
         for (let j = 0; j < gb[i].values.length; j++) {
             gb[i].values[j] = fn(gb[i].values[j]);
         }
+    }
+    return gb;
+}
+
+function mapGameboardSquare(gameboard, pos, fn){
+    let gb = deepCopy(gameboard);
+    let result = fn(gb[pos.y].values[pos.x]);
+    if( typeof result !== 'undefined'){
+        gb[pos.y].values[pos.x] = result;
     }
     return gb;
 }
