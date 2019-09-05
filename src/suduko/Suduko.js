@@ -1,27 +1,5 @@
 import React, {useMemo, useState} from 'react';
 
-function classNames(props) {
-    var result = '';
-    Object.keys(props).forEach((key) => {
-        if(props[key]){
-            result += key;
-            result += ' ';
-        }
-    })
-    return result;
-}
-
-function deepCopy(gameBoard) {
-    return JSON.parse(JSON.stringify(gameBoard));
-}
-
-function lockGameboard(gameboard) {
-    return mapEachSquare(gameboard, (square) => {
-        square.locked = square.value > 0;
-        return square;
-    });
-}
-
 function Suduko() {
     const size = 3;
     const neigborsMap = useMemo(() => getNeighborsMap(getIndicies(size)), [size]);
@@ -33,11 +11,11 @@ function Suduko() {
         if (input) {
             let number = input !== "*" ? input : 0;
             let nextGameBoard = deepCopy(gameBoard);
+            let prevNumber = getNumberOnGameboard(gameBoard, square);
             if (number === 0) {
                 // This square has been reset, clear any failure flags
                 nextGameBoard = clearFailingSquareOnGameBoard(nextGameBoard, square)
                 // Re-evaluate neighbors that have same number (in case a faulty state has been resolved)
-                let prevNumber = getNumberOnGameboard(gameBoard, square);
                 let gb = placeNumberOnGameBoard(number, nextGameBoard, square);
                 let neighborsWithNumber = getAllNeighborsWithNumber(neigborsMap, square, prevNumber, gb)
                 neighborsWithNumber.forEach((neighbor) => {
@@ -47,13 +25,16 @@ function Suduko() {
                         nextGameBoard = failingSquareOnGameBoard(nextGameBoard, neighbor)
                     }
                 })
-            } else if (validMove(gameBoard, square, number, neigborsMap)) {
-                nextGameBoard = clearFailingSquareOnGameBoard(nextGameBoard, square)
+            } else if (isValidNumber(square, number)) {
+                nextGameBoard = clearFailingSquareOnGameBoard(nextGameBoard, square);
             } else {
-                nextGameBoard = failingSquareOnGameBoard(nextGameBoard, square)
+                nextGameBoard = failingSquareOnGameBoard(nextGameBoard, square);
             }
-            setGameBoard(placeNumberOnGameBoard(number, nextGameBoard, square));
-            //    gameBoard[square.y].values[square.x].possible[number] = false;
+            nextGameBoard = placeNumberOnGameBoard(number, nextGameBoard, square);
+            nextGameBoard = updatePossibleNumbers(square, neigborsMap, nextGameBoard, number, prevNumber);
+
+            setGameBoard(nextGameBoard);
+
         }
     }
     const saveGameboard = () => {
@@ -76,9 +57,17 @@ function Suduko() {
                 "horizontalBorder" : square.y === 2 || square.y === 5,
                 "failed" : square.failing
             });
+            let possibleNumbers = [];
+            for (let [key, value] of Object.entries(square.possible)) {
+                if (key !== "0" && value) {
+                    possibleNumbers.push(key);
+                }
+            }
+            let title = possibleNumbers.join(", ");
+
             return (
                 <td key={square.id} className={tdClassnames}>
-                    <input disabled={square.locked} key={square.id} type={"text"} onPaste={handleInput(square)} onKeyDown={handleInput(square)} defaultValue={square.value === 0 ? '' : square.value} size={1} maxLength={1}/>
+                    <input title={title} disabled={square.locked} key={square.id} type={"text"} onPaste={handleInput(square)} onKeyDown={handleInput(square)} defaultValue={square.value === 0 ? '' : square.value} size={1} maxLength={1}/>
                 </td>
             )
         });
@@ -118,16 +107,47 @@ const validateInput = (evt) => {
         return key;
     }
 }
+function classNames(props) {
+    var result = '';
+    Object.keys(props).forEach((key) => {
+        if(props[key]){
+            result += key;
+            result += ' ';
+        }
+    })
+    return result;
+}
 
-function getAllNeighborsWithNumber(neigborsMap, square, number, gameboard) {
-    return neigborsMap[getKeyFromPos(square)].filter((neighbor) => {
-        return !isSamePos(square, neighbor) && number === getNumberOnGameboard(gameboard, neighbor);
+function lockGameboard(gameboard) {
+    return mapEachSquare(gameboard, (square) => {
+        square.locked = square.value > 0;
+        return square;
     });
 }
 
-const validMove = (gameBoard, square, number, neigborsMap) => {
-    return isEmptyArray(getAllNeighborsWithNumber(neigborsMap, square, number, gameBoard));
+function getNeighbors(neigborsMap, pos){
+    return [...neigborsMap[getKeyFromPos(pos)]];
 }
+
+function getAllNeighborsWithNumber(neigborsMap, pos, number, gameboard) {
+    return getNeighbors(neigborsMap,pos).filter((neighbor) => {
+        return !isSamePos(pos, neighbor) && number === getNumberOnGameboard(gameboard, neighbor);
+    });
+}
+
+function updatePossibleNumbers(currentPos, neigborsMap, gameboard, number, prevNumber) {
+    let poss = [currentPos,...getNeighbors(neigborsMap, currentPos)];
+    let mapGameboardSquare1 = mapGameboardSquare(gameboard, poss, (s) => {
+        s.possible[number] = !isSamePos(currentPos, s) && validMove(gameboard, s, number, neigborsMap);
+        s.possible[prevNumber] = validMove(gameboard, s, prevNumber, neigborsMap);
+    });
+    return mapGameboardSquare1;
+}
+const validMove = (gameBoard, pos, number, neigborsMap) => {
+    let newVar = number === 0 || isEmptyArray(getAllNeighborsWithNumber(neigborsMap, pos, number, gameBoard));
+    return newVar;
+}
+
 function failingSquareOnGameBoard(gameBoard, pos) {
     return mapGameboardSquare(gameBoard, pos, (square) => {square.failing = true;})
 }
@@ -140,7 +160,6 @@ function placeNumberOnGameBoard(number, gameBoard, pos) {
 function getNumberOnGameboard(gameBoard, pos) {
     return gameBoard[pos.y].values[pos.x].value;
 }
-
 function getInitialGameBoard(size, neighborsMap) {
     let height = size*size;
     let width = size*size;
@@ -153,6 +172,7 @@ function getInitialGameBoard(size, neighborsMap) {
     }
     return result;
 }
+
 function getIndicies(size){
     let numberOfRows = size*size;
     let numberOfCols = size*size;
@@ -211,7 +231,6 @@ function getIndicies(size){
 
     return allInidicies;
 }
-
 function getNeighborsMap(indicies){
     let neighborsMap = {};
     for(let i = 0; i < indicies.length; i++){
@@ -236,12 +255,16 @@ function mapEachSquare(gameboard, fn){
     return gb;
 }
 
-function mapGameboardSquare(gameboard, pos, fn){
+function mapGameboardSquare(gameboard, poss, fn){
     let gb = deepCopy(gameboard);
-    let result = fn(gb[pos.y].values[pos.x]);
-    if( typeof result !== 'undefined'){
-        gb[pos.y].values[pos.x] = result;
-    }
+    let ps = Array.isArray(poss) ? poss : [poss];
+    ps.forEach((pos) => {
+        let result = fn(gb[pos.y].values[pos.x]);
+        if( typeof result !== 'undefined'){
+            gb[pos.y].values[pos.x] = result;
+        }
+
+    })
     return gb;
 }
 
@@ -265,10 +288,27 @@ function getUniquePoss(a) {
     return b;
 }
 
-const buildSquare = (y, x, value) => { return {id: y + ":" + x, y: y, x: x, value: value, failing: false, locked:false, possible:{"1":true,"2":true,"3":true,"4":true,"5":true,"6":true,"7":true,"8":true,"9":true}};}
+const buildSquare = (y, x, value) => {
+    let square = {
+        id: y + ":" + x,
+        y: y,
+        x: x,
+        value: value,
+        failing: false,
+        locked: false,
+        possible: {"0": true, "1": true, "2": true, "3": true, "4": true, "5": true, "6": true, "7": true, "8": true, "9": true}
+    };
+    square.possible[value] = false;
+    return square;
+}
+const isValidNumber = (square, number) => {return square.possible[number];}
+
 const buildPos = (y,x) => {return {y:y, x:x}};
 const isSamePos = (s1, s2) => {return s1.x === s2.x && s1.y === s2.y;}
 const getKeyFromPos = (pos) => {return pos.x + ":" + pos.y;}
+
 const isEmptyArray = (array) => {return !array || !array.length;}
+function deepCopy(gameBoard) {return JSON.parse(JSON.stringify(gameBoard));}
+
 
 export default Suduko;
