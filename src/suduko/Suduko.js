@@ -37,7 +37,7 @@ function Suduko() {
 
         }
     }
-    const saveGameboard = () => {
+    function saveGameboard(){
         let nextSavedGameboards = deepCopy(savedGameboards);
         nextSavedGameboards.push(deepCopy(gameBoard));
         setSavedGameboards(nextSavedGameboards);
@@ -45,7 +45,7 @@ function Suduko() {
         setGameBoard(lockGameboard(nextGameboard));
 
     };
-    const restoreGameboard = () => {
+    function restoreGameboard(){
         let nextSavedGameboards = deepCopy(savedGameboards);
         setGameBoard(nextSavedGameboards.pop());
         setSavedGameboards(nextSavedGameboards);
@@ -88,7 +88,8 @@ function Suduko() {
         </>
     );
 }
-const validateInput = (evt) => {
+
+function validateInput(evt){
     var theEvent = evt || window.event;
     var keyCode = theEvent.keyCode || theEvent.which;
     let key = String.fromCharCode(keyCode);
@@ -143,7 +144,7 @@ function updatePossibleNumbers(currentPos, neigborsMap, gameboard, number, prevN
     });
     return mapGameboardSquare1;
 }
-const validMove = (gameBoard, pos, number, neigborsMap) => {
+function validMove(gameBoard, pos, number, neigborsMap){
     let newVar = number === 0 || isEmptyArray(getAllNeighborsWithNumber(neigborsMap, pos, number, gameBoard));
     return newVar;
 }
@@ -288,7 +289,7 @@ function getUniquePoss(a) {
     return b;
 }
 
-const buildSquare = (y, x, value) => {
+function buildSquare(y, x, value){
     let square = {
         id: y + ":" + x,
         y: y,
@@ -301,11 +302,11 @@ const buildSquare = (y, x, value) => {
     square.possible[value] = false;
     return square;
 }
-const isValidNumber = (square, number) => {return square.possible[number];}
+function isValidNumber(square, number) {return square.possible[number];}
 
-const buildPos = (y,x) => {return {y:y, x:x}};
-const isSamePos = (s1, s2) => {return s1.x === s2.x && s1.y === s2.y;}
-const getKeyFromPos = (pos) => {return pos.x + ":" + pos.y;}
+function buildPos(y,x){return {y:y, x:x}};
+function isSamePos(s1, s2){return s1.x === s2.x && s1.y === s2.y;}
+function getKeyFromPos(pos){return pos.x + ":" + pos.y;}
 
 const isEmptyArray = (array) => {return !array || !array.length;}
 function deepCopy(gameBoard) {return JSON.parse(JSON.stringify(gameBoard));}
