@@ -1,55 +1,34 @@
-import React, {useMemo, useState} from 'react';
+import React, {useMemo, useState, useEffect} from 'react';
 
 function Suduko() {
     const size = 3;
+    const indicies = useMemo(() => getIndicies(size), [size]);
     const neigborsMap = useMemo(() => getNeighborsMap(getIndicies(size)), [size]);
-    const [gameBoard, setGameBoard] = useState(() => getInitialGameBoard(size, neigborsMap));
-    const [savedGameboards, setSavedGameboards] = useState([]);
+    const {setQueryParam, getQueryParam} = useHistory();
+    const gameBoard = useMemo(() => {
+        return withNumbersHint(withValidateNumbers(getInitialGameBoard(size, getGameBoardValues(getQueryParam('b'), size)), indicies), neigborsMap);
+        }, [getQueryParam, indicies, neigborsMap]);
+
+    function setGameBoard(gb){
+        var result = [];
+        for (var i = 0 ; i < gb.length; i++) {
+            for (var j = 0; j < gb[i].values.length; j++) {
+                result.push(gb[i].values[j].value);
+            }
+        }
+        setQueryParam('b', result.join(''))
+    }
 
     const handleInput = (square) => (evt) => {
         let input = validateInput(evt);
         if (input) {
             let number = input !== "*" ? input : 0;
             let nextGameBoard = deepCopy(gameBoard);
-            let prevNumber = getNumberOnGameboard(gameBoard, square);
-            if (number === 0) {
-                // This square has been reset, clear any failure flags
-                nextGameBoard = clearFailingSquareOnGameBoard(nextGameBoard, square)
-                // Re-evaluate neighbors that have same number (in case a faulty state has been resolved)
-                let gb = placeNumberOnGameBoard(number, nextGameBoard, square);
-                let neighborsWithNumber = getAllNeighborsWithNumber(neigborsMap, square, prevNumber, gb)
-                neighborsWithNumber.forEach((neighbor) => {
-                    if (validMove(gb, neighbor, prevNumber, neigborsMap)) {
-                        nextGameBoard = clearFailingSquareOnGameBoard(nextGameBoard, neighbor)
-                    } else {
-                        nextGameBoard = failingSquareOnGameBoard(nextGameBoard, neighbor)
-                    }
-                })
-            } else if (isValidNumber(square, number)) {
-                nextGameBoard = clearFailingSquareOnGameBoard(nextGameBoard, square);
-            } else {
-                nextGameBoard = failingSquareOnGameBoard(nextGameBoard, square);
-            }
             nextGameBoard = placeNumberOnGameBoard(number, nextGameBoard, square);
-            nextGameBoard = updatePossibleNumbers(square, neigborsMap, nextGameBoard, number, prevNumber);
-
             setGameBoard(nextGameBoard);
 
         }
     }
-    function saveGameboard(){
-        let nextSavedGameboards = deepCopy(savedGameboards);
-        nextSavedGameboards.push(deepCopy(gameBoard));
-        setSavedGameboards(nextSavedGameboards);
-        let nextGameboard = deepCopy(gameBoard);
-        setGameBoard(lockGameboard(nextGameboard));
-
-    };
-    function restoreGameboard(){
-        let nextSavedGameboards = deepCopy(savedGameboards);
-        setGameBoard(nextSavedGameboards.pop());
-        setSavedGameboards(nextSavedGameboards);
-    };
     let boardUI = gameBoard.map(row => {
         let cols = row.values.map(square => {
             let tdClassnames = classNames({
@@ -77,16 +56,110 @@ function Suduko() {
             </tr>
         )
     })
+
     return (
         <>
             <h1>Welcome to Suduko</h1>
             <table className={"App gameBoard"}>
                 <tbody>{boardUI}</tbody>
             </table>
-            <button onClick={saveGameboard}>Save</button>
-            <button onClick={restoreGameboard} disabled={isEmptyArray(savedGameboards)}>Restore ({savedGameboards.length})</button>
         </>
     );
+}
+
+function useHistory(){
+        const [href, setHref] = useState(window.location.href);
+        const params = useMemo(() => {
+            let searchParams = new URLSearchParams(window.location.search);
+            let params = {};
+            for(var key of searchParams.keys()){
+                params[key] = searchParams.get(key);
+            }
+            return params;
+        }, [window.location.search]);
+
+        useEffect(() => {
+            window.addEventListener('popstate', () => {
+                setHref(window.location.href)
+            });
+        }, [])
+
+        function pushState(_href){
+            window.history.pushState({}, '', _href)
+            window.dispatchEvent(new Event('popstate'));
+        }
+        function setQueryParam(param, value){
+            let searchParams = new URLSearchParams(window.location.search);
+            searchParams.set(param, value);
+            pushState(window.location.origin + "?" + searchParams)
+        }
+        function getQueryParam(param){
+            let searchParams = new URLSearchParams(window.location.search);
+            return searchParams.get(param);
+        }
+
+        return {href, params, pushState, setQueryParam, getQueryParam};
+
+}
+
+function getGameBoardValues(valuesAsString, size){
+        let height = size*size;
+        let width = size*size;
+        let values = (valuesAsString?valuesAsString.split(''):[]).concat(new Array(height * width));
+        var result = [];
+        for (var i = 0 ; i < height; i++) {
+            result[i] = [];
+            for (var j = 0; j < width; j++) {
+                result[i][j] = parseInt(values[i*height+j]||'0', 10);
+            }
+        }
+        return result;
+
+}
+
+function withValidateNumbers(gameBoard, indicies){
+    let newGameBoard = [...gameBoard];
+    indicies.forEach(is => {
+        let numbers = {};
+        is.forEach(i => {
+            let n = getNumberOnGameboard(gameBoard, i);
+            if(n !== 0){
+                if(numbers[n]){
+                    numbers[n].push(i)
+                } else {
+                    numbers[n] = [i]
+                }
+            }
+        })
+        if(Object.keys(numbers).length > 1)
+            Object.keys(numbers).forEach(key => {
+                if(numbers[key].length > 1){
+                    numbers[key].forEach(pos =>{
+                        newGameBoard = failingSquareOnGameBoard(newGameBoard, pos);
+                    })
+                }
+            })
+
+    })
+    return newGameBoard;
+}
+function withNumbersHint(gameBoard, neigborsMap){
+    let newGameBoard = [...gameBoard];
+    Object.keys(neigborsMap)
+    .map(key => getPosFromKey(key))
+    .forEach(pos => {
+        let currentValue = getNumberOnGameboard(newGameBoard, pos);
+        if(currentValue === 0){
+            newGameBoard = mapHint(newGameBoard, pos, (n, oldValue) => {
+                return isEmptyArray(getAllNeighborsWithNumber(neigborsMap, pos, n, gameBoard));
+            });
+        } else {
+            newGameBoard = mapHint(newGameBoard, pos, (n, oldValue)=> {
+                return n === 0 ;
+            });
+        }
+    })
+    return newGameBoard;
 }
 
 function validateInput(evt){
@@ -119,13 +192,6 @@ function classNames(props) {
     return result;
 }
 
-function lockGameboard(gameboard) {
-    return mapEachSquare(gameboard, (square) => {
-        square.locked = square.value > 0;
-        return square;
-    });
-}
-
 function getNeighbors(neigborsMap, pos){
     return [...neigborsMap[getKeyFromPos(pos)]];
 }
@@ -136,24 +202,8 @@ function getAllNeighborsWithNumber(neigborsMap, pos, number, gameboard) {
     });
 }
 
-function updatePossibleNumbers(currentPos, neigborsMap, gameboard, number, prevNumber) {
-    let poss = [currentPos,...getNeighbors(neigborsMap, currentPos)];
-    let mapGameboardSquare1 = mapGameboardSquare(gameboard, poss, (s) => {
-        s.possible[number] = !isSamePos(currentPos, s) && validMove(gameboard, s, number, neigborsMap);
-        s.possible[prevNumber] = validMove(gameboard, s, prevNumber, neigborsMap);
-    });
-    return mapGameboardSquare1;
-}
-function validMove(gameBoard, pos, number, neigborsMap){
-    let newVar = number === 0 || isEmptyArray(getAllNeighborsWithNumber(neigborsMap, pos, number, gameBoard));
-    return newVar;
-}
-
 function failingSquareOnGameBoard(gameBoard, pos) {
     return mapGameboardSquare(gameBoard, pos, (square) => {square.failing = true;})
-}
-function clearFailingSquareOnGameBoard(gameBoard, pos) {
-    return mapGameboardSquare(gameBoard, pos, (square) => {square.failing = false;})
 }
 function placeNumberOnGameBoard(number, gameBoard, pos) {
     return mapGameboardSquare(gameBoard, pos, (square) => {square.value = number;})
@@ -161,14 +211,14 @@ function placeNumberOnGameBoard(number, gameBoard, pos) {
 function getNumberOnGameboard(gameBoard, pos) {
     return gameBoard[pos.y].values[pos.x].value;
 }
-function getInitialGameBoard(size, neighborsMap) {
+function getInitialGameBoard(size, values) {
     let height = size*size;
     let width = size*size;
     var result = [];
     for (var i = 0 ; i < height; i++) {
         result[i] = {id:i, values:[]};
         for (var j = 0; j < width; j++) {
-            result[i].values[j] = buildSquare(i, j, 0);
+            result[i].values[j] = buildSquare(i, j, values[i][j]);
         }
     }
     return result;
@@ -246,16 +296,6 @@ function getNeighborsMap(indicies){
     return neighborsMap;
 }
 
-function mapEachSquare(gameboard, fn){
-    let gb = deepCopy(gameboard);
-    for (let i = 0; i < gb.length; i++) {
-        for (let j = 0; j < gb[i].values.length; j++) {
-            gb[i].values[j] = fn(gb[i].values[j]);
-        }
-    }
-    return gb;
-}
-
 function mapGameboardSquare(gameboard, poss, fn){
     let gb = deepCopy(gameboard);
     let ps = Array.isArray(poss) ? poss : [poss];
@@ -302,11 +342,19 @@ function buildSquare(y, x, value){
     square.possible[value] = false;
     return square;
 }
-function isValidNumber(square, number) {return square.possible[number];}
+function mapHint(gameBoard, poss, fn){
+    return mapGameboardSquare(gameBoard, poss, (square)=>{
+        Object.keys(square.possible).forEach(numStr => {
+            square.possible[numStr] = fn(Number(numStr),square.possible[numStr]);
+        })
+        return square;
+    })
+}
 
 function buildPos(y,x){return {y:y, x:x}};
 function isSamePos(s1, s2){return s1.x === s2.x && s1.y === s2.y;}
 function getKeyFromPos(pos){return pos.x + ":" + pos.y;}
+function getPosFromKey(key){return {x:key.split(":")[0], y:key.split(":")[1]};}
 
 const isEmptyArray = (array) => {return !array || !array.length;}
 function deepCopy(gameBoard) {return JSON.parse(JSON.stringify(gameBoard));}
