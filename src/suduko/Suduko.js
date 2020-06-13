@@ -91,7 +91,7 @@ function useHistory(){
         function setQueryParam(param, value){
             let searchParams = new URLSearchParams(window.location.search);
             searchParams.set(param, value);
-            pushState(window.location.origin + "?" + searchParams)
+            pushState(window.location.href.split("?")[0] + "?" + searchParams)
         }
         function getQueryParam(param){
             let searchParams = new URLSearchParams(window.location.search);
