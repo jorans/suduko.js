@@ -8,7 +8,9 @@ function Suduko() {
     const gameBoard = useMemo(() => {
         return withNumbersHint(withValidateNumbers(getInitialGameBoard(size, getGameBoardValues(getQueryParam('b'), size)), indicies), neigborsMap);
         }, [getQueryParam, indicies, neigborsMap]);
-
+    const remainingNumbers = useMemo(() => {
+        return getNumberOfEmptyPositionsInGameboard(gameBoard);
+    }, [gameBoard])
     function setGameBoard(gb){
         var result = [];
         for (var i = 0 ; i < gb.length; i++) {
@@ -60,6 +62,9 @@ function Suduko() {
     return (
         <>
             <h1>Welcome to Suduko</h1>
+            <p>
+                Numbers to play: {remainingNumbers}
+            </p>
             <table className={"App gameBoard"}>
                 <tbody>{boardUI}</tbody>
             </table>
@@ -210,6 +215,19 @@ function placeNumberOnGameBoard(number, gameBoard, pos) {
 }
 function getNumberOnGameboard(gameBoard, pos) {
     return gameBoard[pos.y].values[pos.x].value;
+}
+function getNumberOfEmptyPositionsInGameboard(gameBoard) {
+    let height = gameBoard.length;
+    let width = gameBoard.length;
+    var result = width*height;
+    for (var i = 0 ; i < height; i++) {
+        for (var j = 0; j < width; j++) {
+            if(gameBoard[i].values[j].value > 0){
+                result -= 1
+            }
+        }
+    }
+    return result;
 }
 function getInitialGameBoard(size, values) {
     let height = size*size;
