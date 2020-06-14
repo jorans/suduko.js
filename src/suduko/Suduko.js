@@ -70,12 +70,11 @@ function Suduko() {
     return (
         <>
             <h1>Welcome to Suduko</h1>
-            <Timer run={runTimer && remainingNumbers > 46}/>
-            <button style={{margin:"10px"}} onClick={toggleTimerActive} disabled={remainingNumbers == 46} >{runTimer?"Pause":"Continue"}</button>
+            <Timer run={runTimer && remainingNumbers > 0}/>
+            <button style={{margin:"10px"}} onClick={toggleTimerActive} disabled={remainingNumbers == 0} >{runTimer?"Pause":"Continue"}</button>
             <p>
-
-                {remainingNumbers > 46 && "Numbers to play:" + remainingNumbers}
-                {remainingNumbers == 46 && "Congratulation, no more numbers to play!"}
+                {remainingNumbers > 0 && "Numbers to play:" + remainingNumbers}
+                {remainingNumbers == 0 && "Congratulation, no more numbers to play!"}
             </p>
             <table className={"App gameBoard"}>
                 <tbody>{boardUI}</tbody>
