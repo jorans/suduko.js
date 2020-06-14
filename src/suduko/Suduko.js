@@ -1,16 +1,20 @@
-import React, {useMemo, useState, useEffect} from 'react';
+import React, {useMemo, useState, useEffect, useRef} from 'react';
 
 function Suduko() {
     const size = 3;
+    const [runTimer, setRunTimer] = useState(true);
     const indicies = useMemo(() => getIndicies(size), [size]);
     const neigborsMap = useMemo(() => getNeighborsMap(getIndicies(size)), [size]);
     const {setQueryParam, getQueryParam} = useHistory();
+
     const gameBoard = useMemo(() => {
         return withNumbersHint(withValidateNumbers(getInitialGameBoard(size, getGameBoardValues(getQueryParam('b'), size)), indicies), neigborsMap);
         }, [getQueryParam, indicies, neigborsMap]);
+
     const remainingNumbers = useMemo(() => {
         return getNumberOfEmptyPositionsInGameboard(gameBoard);
     }, [gameBoard])
+
     function setGameBoard(gb){
         var result = [];
         for (var i = 0 ; i < gb.length; i++) {
@@ -59,11 +63,19 @@ function Suduko() {
         )
     })
 
+    function toggleTimerActive(){
+        setRunTimer(!runTimer);
+    }
+
     return (
         <>
             <h1>Welcome to Suduko</h1>
+            <Timer run={runTimer && remainingNumbers > 46}/>
+            <button style={{margin:"10px"}} onClick={toggleTimerActive} disabled={remainingNumbers == 46} >{runTimer?"Pause":"Continue"}</button>
             <p>
-                Numbers to play: {remainingNumbers}
+
+                {remainingNumbers > 46 && "Numbers to play:" + remainingNumbers}
+                {remainingNumbers == 46 && "Congratulation, no more numbers to play!"}
             </p>
             <table className={"App gameBoard"}>
                 <tbody>{boardUI}</tbody>
@@ -105,6 +117,67 @@ function useHistory(){
 
         return {href, params, pushState, setQueryParam, getQueryParam};
 
+}
+
+function Timer({run}){
+        const {getElapsedTime, time0} = useTimer();
+        const [time, setTime] = useState(time0);
+
+        useInterval(() => {
+            setTime(getElapsedTime());
+        }, run ? 1000 : null)
+
+        return (
+            <>
+            {time.days}d {time.hours}h {time.minutes}m {time.seconds}s
+            </>
+        )
+}
+
+function useTimer(){
+    const initialTime = useMemo(() => {
+        return new Date().getTime();
+    },[])
+
+    function getElapsedTime(){
+        let now = new Date().getTime();
+        let distance = now - initialTime;
+        return toTime(distance);
+    }
+    function time0(){
+        return toTime(0)
+    }
+
+    function toTime(distance){
+        return {
+            days: distance ? Math.floor(distance / (1000 * 60 * 60 * 24)) : 0,
+            hours: distance ? Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)) : 0,
+            minutes: distance ? Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)) : 0,
+            seconds: distance ? Math.floor((distance % (1000 * 60)) / 1000) : 0
+        }
+    }
+    return{
+        getElapsedTime,
+        time0,
+    }
+}
+
+function useInterval(callback, delay){
+  const savedCallback = useRef();
+
+  useEffect(() => {
+    savedCallback.current = callback;
+  }, [callback]);
+
+  useEffect(() => {
+    function tick() {
+      savedCallback.current();
+    }
+    if (delay !== null) {
+      let id = setInterval(tick, delay);
+      return () => clearInterval(id);
+    }
+  }, [delay]);
 }
 
 function getGameBoardValues(valuesAsString, size){
