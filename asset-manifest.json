@@ -1,14 +1,14 @@
 {
   "files": {
     "main.css": "/suduko.js/static/css/main.5b1826ef.chunk.css",
-    "main.js": "/suduko.js/static/js/main.f5f6a481.chunk.js",
-    "main.js.map": "/suduko.js/static/js/main.f5f6a481.chunk.js.map",
+    "main.js": "/suduko.js/static/js/main.a60807aa.chunk.js",
+    "main.js.map": "/suduko.js/static/js/main.a60807aa.chunk.js.map",
     "runtime~main.js": "/suduko.js/static/js/runtime~main.59041670.js",
     "runtime~main.js.map": "/suduko.js/static/js/runtime~main.59041670.js.map",
     "static/js/2.f262a4ca.chunk.js": "/suduko.js/static/js/2.f262a4ca.chunk.js",
     "static/js/2.f262a4ca.chunk.js.map": "/suduko.js/static/js/2.f262a4ca.chunk.js.map",
     "index.html": "/suduko.js/index.html",
-    "precache-manifest.2dfb62d5ea543dfeedbc852e81382709.js": "/suduko.js/precache-manifest.2dfb62d5ea543dfeedbc852e81382709.js",
+    "precache-manifest.7e3501cf965740ef2b3bd471cb84ab23.js": "/suduko.js/precache-manifest.7e3501cf965740ef2b3bd471cb84ab23.js",
     "service-worker.js": "/suduko.js/service-worker.js",
     "static/css/main.5b1826ef.chunk.css.map": "/suduko.js/static/css/main.5b1826ef.chunk.css.map"
   }
