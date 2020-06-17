@@ -7,6 +7,14 @@ function Suduko() {
     const neigborsMap = useMemo(() => getNeighborsMap(getIndicies(size)), [size]);
     const {setQueryParam, getQueryParam} = useHistory();
 
+    const useHint = useMemo(() => {
+        return getQueryParam('h') === "true"||false;
+    }, [getQueryParam]);
+
+    function setUseHint(newUseHintValue){
+        setQueryParam('h', newUseHintValue);
+    }
+
     const gameBoard = useMemo(() => {
         return withNumbersHint(withValidateNumbers(getInitialGameBoard(size, getGameBoardValues(getQueryParam('b'), size)), indicies), neigborsMap);
         }, [getQueryParam, indicies, neigborsMap]);
@@ -52,7 +60,7 @@ function Suduko() {
 
             return (
                 <td key={square.id} className={tdClassnames}>
-                    <input title={title} disabled={square.locked} key={square.id} type={"text"} onPaste={handleInput(square)} onKeyDown={handleInput(square)} defaultValue={square.value === 0 ? '' : square.value} size={1} maxLength={1}/>
+                    <Square useHint={useHint} title={title} disabled={square.locked} key={square.id} handleInput={handleInput} square={square}/>
                 </td>
             )
         });
@@ -67,14 +75,18 @@ function Suduko() {
         setRunTimer(!runTimer);
     }
 
+    function onUseHintChanged(e){
+        setUseHint(e.target.checked);
+    }
     return (
         <>
             <h1>Welcome to Suduko</h1>
             <Timer run={runTimer && remainingNumbers > 0}/>
-            <button style={{margin:"10px"}} onClick={toggleTimerActive} disabled={remainingNumbers == 0} >{runTimer?"Pause":"Continue"}</button>
+            <button style={{margin:"10px"}} onClick={toggleTimerActive} disabled={remainingNumbers === 0} >{runTimer?"Pause":"Continue"}</button>
             <p>
-                {remainingNumbers > 0 && "Numbers to play:" + remainingNumbers}
-                {remainingNumbers == 0 && "Congratulation, no more numbers to play!"}
+                {remainingNumbers > 0 && "Numbers to play: " + remainingNumbers}
+                {remainingNumbers > 0 && <span style={{marginLeft:"10px"}}>Use hints: <input type={"checkbox"} checked={useHint} onChange={onUseHintChanged}/></span>}
+                {remainingNumbers === 0 && "Congratulation, no more numbers to play!"}
             </p>
             <table className={"App gameBoard"}>
                 <tbody>{boardUI}</tbody>
@@ -83,6 +95,16 @@ function Suduko() {
     );
 }
 
+function Square({useHint, title, disabled, key, square, handleInput}){
+    const showHint = useHint && square.value === 0;
+    const opacity = showHint ? 0.5 : 1.0;
+    return (
+        <div style={{display:"grid"}}>
+            {showHint && <span style={{gridColumn:1, gridRow:1, fontSize:"10px"}}>{title}</span>}
+            <input style={{gridColumn:1, gridRow:1, opacity:opacity}} title={title} disabled={disabled} key={key} type={"text"} onPaste={handleInput(square)} onKeyDown={handleInput(square)} defaultValue={square.value === 0 ? '' : square.value} size={1} maxLength={1}/>
+          </div>
+    )
+}
 function useHistory(){
         const [href, setHref] = useState(window.location.href);
         const params = useMemo(() => {
