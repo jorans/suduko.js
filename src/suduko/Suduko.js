@@ -78,6 +78,10 @@ function Suduko() {
     function onUseHintChanged(e){
         setUseHint(e.target.checked);
     }
+    function onAddSigletonValuesClicked(){
+        addSingletonValues(gameBoard, setGameBoard, neigborsMap);
+    }
+
     return (
         <>
             <h1>Welcome to Suduko</h1>
@@ -91,6 +95,7 @@ function Suduko() {
             <table className={"App gameBoard"}>
                 <tbody>{boardUI}</tbody>
             </table>
+            {remainingNumbers > 0 && <button onClick={onAddSigletonValuesClicked}>Insert singleton values</button>}
         </>
     );
 }
@@ -323,6 +328,39 @@ function getNumberOfEmptyPositionsInGameboard(gameBoard) {
     }
     return result;
 }
+
+function addSingletonValues(gameBoard, setGameBoard, neigborsMap) {
+    function getHintValues(hints){
+        let values = [];
+        Object.keys(hints).forEach((key) => {
+            if(hints[key]){
+                values.push(key);
+            }
+        });
+        return values;
+    }
+    let height = gameBoard.length;
+    let width = gameBoard.length;
+    let newGameBoard = deepCopy(gameBoard);
+    var counter = 0;
+    do{
+        var valueAdded=false;
+        for (var y = 0 ; y < height; y++) {
+            for (var x = 0; x < width; x++) {
+                if(newGameBoard[y].values[x].value === 0){
+                    let hintValues = getHintValues(newGameBoard[y].values[x].possible);
+                    if(hintValues.length === 1){
+                        newGameBoard = withNumbersHint(placeNumberOnGameBoard(Number(hintValues[0]), newGameBoard, buildPos(y,x)), neigborsMap);
+                        valueAdded=true
+                        counter++;
+                    }
+                }
+            }
+        }
+    } while(valueAdded);
+    setGameBoard(newGameBoard);
+}
+
 function getInitialGameBoard(size, values) {
     let height = size*size;
     let width = size*size;
