@@ -16,7 +16,7 @@ function Suduko() {
     }
 
     const validQueryParameters = useMemo(() => {
-        return /^[0-9]*$/.test(getQueryParam('b')) && /^(true|false)?$/.test(getQueryParam('h'))
+        return /^[0-9]*$/.test(getQueryParam('b')|| '') && /^(true|false)?$/.test(getQueryParam('h')||'')
     }, [getQueryParam])
     const gameBoard = useMemo(() => {
         return withNumbersHint(withValidateNumbers(getInitialGameBoard(size, getGameBoardValues(getQueryParam('b'), size)), indicies), neigborsMap);
