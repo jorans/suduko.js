@@ -15,6 +15,9 @@ function Suduko() {
         setQueryParam('h', newUseHintValue);
     }
 
+    const validQueryParameters = useMemo(() => {
+        return /^[0-9]*$/.test(getQueryParam('b')) && /^(true|false)?$/.test(getQueryParam('h'))
+    }, [getQueryParam])
     const gameBoard = useMemo(() => {
         return withNumbersHint(withValidateNumbers(getInitialGameBoard(size, getGameBoardValues(getQueryParam('b'), size)), indicies), neigborsMap);
         }, [getQueryParam, indicies, neigborsMap]);
@@ -85,17 +88,24 @@ function Suduko() {
     return (
         <>
             <h1>Welcome to Suduko</h1>
-            <Timer run={runTimer && remainingNumbers > 0}/>
-            <button style={{margin:"10px"}} onClick={toggleTimerActive} disabled={remainingNumbers === 0} >{runTimer?"Pause":"Continue"}</button>
-            <p>
-                {remainingNumbers > 0 && "Numbers to play: " + remainingNumbers}
-                {remainingNumbers > 0 && <span style={{marginLeft:"10px"}}>Use hints: <input type={"checkbox"} checked={useHint} onChange={onUseHintChanged}/></span>}
-                {remainingNumbers === 0 && "Congratulation, no more numbers to play!"}
-            </p>
-            <table className={"App gameBoard"}>
-                <tbody>{boardUI}</tbody>
-            </table>
-            {remainingNumbers > 0 && <button onClick={onAddSigletonValuesClicked}>Insert singleton values</button>}
+            {!validQueryParameters &&
+                <p>Invalid request parameters, only 0-9 are allowed as numbers and 'true', or 'false', as boolean values</p>
+            }
+            {validQueryParameters &&
+                <>
+                    <Timer run={runTimer && remainingNumbers > 0}/>
+                    <button style={{margin:"10px"}} onClick={toggleTimerActive} disabled={remainingNumbers === 0} >{runTimer?"Pause":"Continue"}</button>
+                    <p>
+                        {remainingNumbers > 0 && "Numbers to play: " + remainingNumbers}
+                        {remainingNumbers > 0 && <span style={{marginLeft:"10px"}}>Use hints: <input type={"checkbox"} checked={useHint} onChange={onUseHintChanged}/></span>}
+                        {remainingNumbers === 0 && "Congratulation, no more numbers to play!"}
+                    </p>
+                    <table className={"App gameBoard"}>
+                        <tbody>{boardUI}</tbody>
+                    </table>
+                    {remainingNumbers > 0 && <button onClick={onAddSigletonValuesClicked}>Insert singleton values</button>}
+                </>
+            }
         </>
     );
 }
